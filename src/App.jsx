@@ -14,6 +14,8 @@ import ComparisonView from './pages/ComparisonView'
 import Publish from './pages/Publish'
 import ExposureInfo from './pages/ExposureInfo'
 import Vendedor from './pages/Vendedor'
+import VerificationUser from './components/DobleFactor'
+
 // import ShoppingCart from './pages/ShoppingCart'
 import ExposurePage from './components/Exposure/ExpositionPage'
 import Purchases from './pages/Purchases'
@@ -61,6 +63,7 @@ const App = () => {
         <Route path="/conocenos" element={<Conocenos />} />
         <Route path="/ofertas" element={<Ofertas />} />
         <Route path="/exposure/:idProduct" element={<ExpositionPage />} />
+        <Route path="verificationUser/:token" element={<VerificationUser />} />
       </Route>
     </Routes>
   )

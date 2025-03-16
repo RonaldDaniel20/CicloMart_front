@@ -7,6 +7,7 @@ import Button from './Button'
 import loginService from '../services/loginService'
 import { Link, useNavigate } from 'react-router-dom'
 import { clearLoading, setLoading } from '../store/slices/loadingSlice'
+import DOMPurify from 'dompurify'
 
 
 const RegisterForm = () => {
@@ -32,8 +33,18 @@ const RegisterForm = () => {
   }
   const onSubmit = async (data) => {
     try {
+
+      const sanitizedData = {
+        email: DOMPurify.sanitize(data.email),
+        nombre: DOMPurify.sanitize(data.nombre),
+        apellido: DOMPurify.sanitize(data.apellido),
+        telefono: DOMPurify.sanitize(data.telefono),
+        password: data.password, 
+        passwordConfirm: data.passwordConfirm, 
+      };
+
       dispatch(setLoading())
-      const validateEmail = await sendRegisterCode(data)
+      const validateEmail = await sendRegisterCode(sanitizedData)
       if (validateEmail) {
         dispatch(clearLoading())
         navigate(`/verificationCode/${validateEmail.token}`)

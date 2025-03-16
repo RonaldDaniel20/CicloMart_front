@@ -10,23 +10,35 @@ import { useDispatch } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { setAuthUser, setIsLoggedIn } from '../store/slices/authSlice'
 import loginService from '../services/loginService'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { clearLoading, setLoading } from '../store/slices/loadingSlice'
+
 
 //Captcha
 
 import ReCAPTCHA from 'react-google-recaptcha'
 const API_CAPTCHA = import.meta.env.VITE_CAPTCHA
+import DOMPurify from 'dompurify'
 
 
 const Login = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const captcha = useRef(null);
+  const [attempts, setAttempts] = useState(0)
 
-  const { register, handleSubmit, reset } = useForm()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm()
+
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}$/
 
   const onSubmit = async (data) => {
     try {
+
+      const sanitizedData = {
+        email: DOMPurify.sanitize(data.email),
+        password: DOMPurify.sanitize(data.password),
+
+      }
 
       if(!captcha.current.getValue()){
         dispatch(
@@ -49,11 +61,41 @@ const Login = () => {
             icon: 'error'
           })
         )
-
         return
       }
 
-      const request = await loginService.loginUser(data)
+      if (attempts > 1) {
+        try {
+
+          dispatch(setLoading())
+          const validateUser = await loginService.generateTokenFactorUser(data.email);
+    
+          if (validateUser.success) {
+            dispatch(clearLoading())
+            navigate(`/verificationUser/${validateUser.token}`)
+          }
+          return
+        } catch (error) {
+          if (error.response && error.response.status === 401) { 
+            dispatch(
+              setNotification({
+                title: '¡Ups!',
+                text: 'El correo debe ser el que registraste en la app.',
+                icon: 'error',
+              })
+            );
+          }
+          return
+        } finally {
+          setAttempts(0);
+          reset();
+          captcha.current.reset();
+          dispatch(clearLoading())
+        }
+      }
+      
+      
+      const request = await loginService.loginUser(sanitizedData)
 
       if (request.status === 200) {
         const { token, user } = request.data
@@ -89,6 +131,7 @@ const Login = () => {
             icon: 'error',
           })
         )
+        setAttempts((prevAttemps) => prevAttemps + 1)
         captcha.current.reset()
       } else {
         console.error('Error:', error.message)
@@ -123,12 +166,24 @@ const Login = () => {
             type="email"
             {...register('email', { required: true })}
           />
-          <Input
-            id="password"
-            label="Contraseña"
-            type="password"
-            {...register('password', { required: true })}
-          />
+        <Input
+          id="password"
+          label="Contraseña"
+          type="password"
+          {...register('password', {
+            required: 'Password is required',
+            pattern: {
+              value: passwordRegex,
+              message:
+                'La contraseña debe tener al menos 6 caracteres, una letra mayúscula, una letra minúscula y un número.',
+            },
+          })}
+        />
+        {errors.password && (
+          <span className="text-red-500 text-xs">
+            {errors.password.message}
+          </span>
+        )}
           <div className="flex items-center justify-between">
             <Checkbox
               id="recuerdame"

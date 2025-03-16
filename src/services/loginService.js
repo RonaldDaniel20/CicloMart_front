@@ -33,6 +33,16 @@ const validateCaptcha = async (token) => {
   return request.data
 }
 
+const generateTokenFactorUser = async (data) => {
+  const request = await axios.post(API_URL + '/generateTokenValidationUser',{data})
+  return request.data
+}
+
+const validateTokenFactorUser = async (data, token) => {
+  const request = await axios.post(API_URL + '/validateCodeUser', {data, token})
+  return request.data
+}
+
 export default {
   loginUser,
   sendResetPasswordEmail,
@@ -40,4 +50,6 @@ export default {
   sendRegisterCode,
   validateCode,
   validateCaptcha,
+  generateTokenFactorUser,
+  validateTokenFactorUser
 }
